@@ -10,13 +10,27 @@ android {
         applicationId "com.sunpath.app"
         minSdk 24
         targetSdk 34
-        versionCode 1
-        versionName "1.0"
+        versionCode 2
+        versionName "1.1"
+    }
+
+    // Fixed key so each new build installs as an update over the previous one
+    signingConfigs {
+        sunpath {
+            storeFile file("sunpath.keystore")
+            storePassword "sunpath"
+            keyAlias "sunpath"
+            keyPassword "sunpath"
+        }
     }
 
     buildTypes {
+        debug {
+            signingConfig signingConfigs.sunpath
+        }
         release {
             minifyEnabled false
+            signingConfig signingConfigs.sunpath
         }
     }
 

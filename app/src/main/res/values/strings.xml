@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Sunpath</string>
+    <string name="widget_description">Where the sun is, plus a live countdown to sunset or sunrise</string>
+    <string name="widget_sky_desc">Sky showing the sun\'s path and current position</string>
+</resources>

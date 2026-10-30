@@ -82,6 +82,8 @@ public class MainActivity extends Activity {
             }
         });
 
+        web.addJavascriptInterface(new NativeBridge(this), "SunpathNative");
+
         if (savedInstanceState != null) {
             web.restoreState(savedInstanceState);
         } else {

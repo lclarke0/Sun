@@ -362,6 +362,7 @@ async function loadWeather() {
     live = { code: c.weather_code, cover: c.cloud_cover, temp: c.temperature_2m, wind: c.wind_speed_10m, time: new Date() };
     liveState = "ok";
     if (j.timezone && j.timezone !== loc.tz && loc.source !== "city") { loc.tz = j.timezone; store.set("loc", loc); }
+    pushNative();
   } catch (err) {
     if (!live) liveState = "failed";
   }
@@ -381,7 +382,10 @@ function computeAstro(now) {
   for (let m = -12 * 60; m <= 12 * 60; m += 6) {
     const t = new Date(now.getTime() + m * 6e4); const p = sunPosition(t, loc.lat, loc.lon); path.push(p);
   }
-  astro = { now, pos, next, prev, onToday, path, day: pos.alt > -0.833 };
+  // Day = the most recent horizon crossing was a sunrise (falls back to altitude in polar day/night)
+  const pr = prev("rise"), ps = prev("set");
+  const day = (pr || ps) ? !!(pr && (!ps || pr.t > ps.t)) : pos.alt > -0.833;
+  astro = { now, pos, next, prev, onToday, path, day };
 }
 
 function setFact(list) {
@@ -666,10 +670,23 @@ function draw(ts) {
 
 function loop(ts) { if (!document.hidden) draw(ts); requestAnimationFrame(loop); }
 
+/* ---------- Home-screen widget sync (Android app only) ---------- */
+function pushNative() {
+  try {
+    if (!window.SunpathNative || typeof window.SunpathNative.sync !== "function") return;
+    window.SunpathNative.sync(JSON.stringify({
+      loc: { name: loc.name, lat: loc.lat, lon: loc.lon, tz: loc.tz, source: loc.source || "" },
+      units,
+      weather: live ? { code: live.code, cover: live.cover == null ? -1 : live.cover, temp: live.temp, wind: live.wind } : null
+    }));
+  } catch (err) { /* widget sync is best-effort */ }
+}
+
 /* ---------- Location sheet ---------- */
 function setLocation(next) {
   loc = { name: next.name, region: next.region || "", lat: +next.lat, lon: +next.lon, tz: next.tz || deviceTZ, source: next.source };
   store.set("loc", loc);
+  pushNative();
   for (const k in fmtCache) delete fmtCache[k];
   $("placeName").textContent = loc.name;
   live = null; liveState = "loading";
@@ -733,7 +750,7 @@ $("coordBtn").addEventListener("click", () => {
 function setUnits(u) {
   units = u; store.set("units", u);
   $("unitF").setAttribute("aria-pressed", u === "F"); $("unitC").setAttribute("aria-pressed", u === "C");
-  renderWeather();
+  renderWeather(); pushNative();
 }
 $("unitF").addEventListener("click", () => setUnits("F"));
 $("unitC").addEventListener("click", () => setUnits("C"));
